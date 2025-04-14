@@ -75,17 +75,7 @@ def retorna_cotacao(ticker, periodo="1y"):
     nome_arquivo2 = f"assets/grafico_bollinger_{ticker.lower()}_{data_str}.svg"
     plt.savefig(nome_arquivo2, format='svg')
     plt.close()
-
-    # return json.dumps({
-    #     "dados_historicos": df[["Data", "Close"]].tail(30).to_dict(orient="records"),
-    #     "valor_minimo": valor_min,
-    #     "valor_maximo": valor_max,
-    #     "valor_medio": valor_medio,
-    #     "valor_ultimo": valor_ultimo,
-    #     "ultimos_12_valores": ultimos_12.to_dict(),
-    #     "grafico_nome_arquivo": os.path.basename(nome_arquivo1),
-    #     "grafico_bollinger": os.path.basename(nome_arquivo2)
-    # })
+    
     return json.dumps({
         "dados_historicos": [
             {"data": str(k), "valor": float(v)}
