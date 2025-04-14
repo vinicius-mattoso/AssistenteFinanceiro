@@ -1,10 +1,12 @@
 import openai
 import json
-from utils.financeiro import retorna_cotacao
-from dotenv import load_dotenv
 import os
+import re
+from dotenv import load_dotenv
+from utils.financeiro import retorna_cotacao
 
-load_dotenv()  # Carrega as variáveis do .env
+load_dotenv()
+
 client = openai.Client(api_key=os.getenv("OPENAI_API_KEY"))
 
 def consultar_chatgpt(pergunta):
@@ -39,7 +41,11 @@ def consultar_chatgpt(pergunta):
 
     tool_calls = resposta.choices[0].message.tool_calls
     if not tool_calls:
-        return {"resposta": resposta.choices[0].message.content, "grafico_salvo_em": None}
+        return {
+            "resposta": resposta.choices[0].message.content,
+            "grafico_nome_arquivo": None,
+            "grafico_bollinger": None
+        }
 
     mensagens.append(resposta.choices[0].message)
 
@@ -47,7 +53,16 @@ def consultar_chatgpt(pergunta):
         function_name = tool_call.function.name
         function_args = json.loads(tool_call.function.arguments)
 
-        resultado = retorna_cotacao(**function_args)
+        # Gera gráfico e converte o JSON
+        resultado_json = retorna_cotacao(**function_args)
+        try:
+            resultado = json.loads(resultado_json)
+        except json.JSONDecodeError:
+            return {
+                "resposta": "Erro ao processar os dados do gráfico.",
+                "grafico_nome_arquivo": None,
+                "grafico_bollinger": None
+            }
 
         mensagens.append({
             "tool_call_id": tool_call.id,
@@ -60,9 +75,12 @@ def consultar_chatgpt(pergunta):
             messages=mensagens,
             model="gpt-3.5-turbo-0125"
         )
+
         mensagem_final = segunda_resposta.choices[0].message.content
-        mensagem_sem_link = mensagem_final.split("![")[0].strip()
+        mensagem_sem_link = re.sub(r"!\[.*?\]\(.*?\)", "", mensagem_final).strip()
+
         return {
             "resposta": mensagem_sem_link,
-            "grafico_salvo_em": resultado.get("grafico_salvo_em")
+            "grafico_nome_arquivo": resultado.get("grafico_nome_arquivo"),
+            "grafico_bollinger": resultado.get("grafico_bollinger")
         }

@@ -17,7 +17,7 @@ layout = html.Div([
             dcc.Input(
                 id="pergunta-input",
                 type="text",
-                placeholder="Ex: Como está as ações do Banco do Brasil no últimos 12 meses?",
+                placeholder="Ex: Como estão as ações do Banco do Brasil nos últimos 12 meses?",
                 style={
                     "width": "100%",
                     "padding": "10px",
@@ -27,7 +27,6 @@ layout = html.Div([
                 }
             ),
 
-            # Botão centralizado
             html.Div([
                 html.Button("Consultar", id="consultar-btn", n_clicks=0,
                             style={
@@ -74,15 +73,24 @@ def responder_pergunta(n_clicks, pergunta):
 
     resultado = consultar_chatgpt(pergunta)
     resposta_texto = resultado.get("resposta")
-    caminho_grafico = resultado.get("grafico_salvo_em")
+    grafico1 = resultado.get("grafico_nome_arquivo")
+    grafico2 = resultado.get("grafico_bollinger")
 
-    grafico_html = None
-    if caminho_grafico and os.path.exists(caminho_grafico):
-        with open(caminho_grafico, "rb") as f:
-            encoded = base64.b64encode(f.read()).decode()
-            grafico_html = html.Img(
-                src=f"data:image/svg+xml;base64,{encoded}",
-                style={"width": "100%", "maxWidth": "700px", "marginTop": "20px"}
-            )
+    imagens = []
 
-    return resposta_texto, grafico_html
+    for nome_arquivo in [grafico1, grafico2]:
+        if nome_arquivo:
+            caminho = os.path.join("assets", nome_arquivo)
+            if os.path.exists(caminho):
+                with open(caminho, "rb") as f:
+                    encoded = base64.b64encode(f.read()).decode()
+                    imagens.append(html.Img(
+                        src=f"data:image/svg+xml;base64,{encoded}",
+                        style={"width": "100%", "maxWidth": "700px", "marginTop": "20px"}
+                    ))
+
+    # Garante que algo seja retornado no segundo Output
+    if imagens:
+        return resposta_texto, imagens
+    else:
+        return resposta_texto, html.P("O gráfico não pôde ser carregado.")
